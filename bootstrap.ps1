@@ -4,7 +4,7 @@ param
     $InstallDev = $false,
 
     [Switch]
-    $InstallHome = $false,
+    $InstallHome = $true,
 
     [String]
     $DataDrive,
@@ -31,13 +31,7 @@ param
     $SqlServer2016IsoImage,
 
     [String]
-    $SqlServer2016SaPassword,
-
-    [String]
-    $SqlServer2014IsoImage,
-
-    [String]
-    $SqlServer2014SaPassword
+    $SqlServer2016SaPassword
 )
 
 function Set-EnvironmentVariable
@@ -111,17 +105,6 @@ if ($SqlServer2016IsoImage)
         # enable mixed mode auth
         $env:choco:sqlserver2016:SECURITYMODE="SQL"
         $env:choco:sqlserver2016:SAPWD=$SqlServer2016SaPassword
-    }
-}
-
-if ($SqlServer2014IsoImage)
-{
-    Set-EnvironmentVariable -Key "choco:sqlserver2014:isoImage" -Value $SqlServer2014IsoImage
-
-    if ($SqlServer2014SaPassword) {
-        # enable mixed mode auth
-        $env:choco:sqlserver2014:SECURITYMODE="SQL"
-        $env:choco:sqlserver2014:SAPWD=$SqlServer2014SaPassword
     }
 }
 

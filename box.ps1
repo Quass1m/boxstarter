@@ -22,9 +22,6 @@
     [Environment]::SetEnvironmentVariable("BoxStarter:EnableWindowsAuthFeature", "1", "Machine") # for reboots
     [Environment]::SetEnvironmentVariable("BoxStarter:EnableWindowsAuthFeature", "1", "Process") # for right now
 
-    [Environment]::SetEnvironmentVariable("choco:sqlserver2014:isoImage", "D:\Downloads\en_sql_server_2014_rc_2_x64_dvd_8509698.iso", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("choco:sqlserver2014:isoImage", "D:\Downloads\en_sql_server_2014_rc_2_x64_dvd_8509698.iso", "Process") # for right now
-
     [Environment]::SetEnvironmentVariable("choco:sqlserver2016:isoImage", "D:\Downloads\en_sql_server_2016_rc_2_x64_dvd_8509698.iso", "Machine") # for reboots
     [Environment]::SetEnvironmentVariable("choco:sqlserver2016:isoImage", "D:\Downloads\en_sql_server_2016_rc_2_x64_dvd_8509698.iso", "Process") # for right now
 
@@ -143,6 +140,169 @@ function Get-DataDrive {
     return $driveLetter
 }
 
+function Set-RegionalSettings {
+    #http://stackoverflow.com/questions/4235243/how-to-set-timezone-using-powershell
+    &"$env:windir\system32\tzutil.exe" /s "AUS Eastern Standard Time"
+
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortDate -Value 'dd MMM yy'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sCountry -Value Australia
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortTime -Value 'hh:mm tt'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sTimeFormat -Value 'hh:mm:ss tt'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sLanguage -Value ENA
+}
+
+function Set-RegistrySettings {
+    Set-ItemProperty -Path HKCU:\Software\Microsoft\VisualStudio\15.0\General -Name SuppressUppercaseConversion -Type DWord -Value 1
+    Set-ItemProperty -Path HKCU:\Software\Microsoft\VisualStudio\17.0\General -Name SuppressUppercaseConversion -Type DWord -Value 1
+    Set-ItemProperty -Path HKCU:\Console\%SystemRoot%_system32_cmd.exe -Name QuickEdit -Type DWord -Value 0
+    Set-ItemProperty -Path HKCU:\Console\%SystemRoot%_System32_WindowsPowerShell_v1.0_powershell.exe -Name QuickEdit -Type DWord -Value 0
+    Set-ItemProperty -Path HKCU:\Console\%SystemRoot%_SysWOW64_WindowsPowerShell_v1.0_powershell.exe -Name QuickEdit -Type DWord -Value 0
+}
+
+function Set-BaseSettings {
+    Update-ExecutionPolicy -Policy Unrestricted
+    Update-Help
+
+    Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -DisableShowProtectedOSFiles -EnableShowFileExtensions -EnableShowFullPathInTitleBar -DisableOpenFileExplorerToQuickAccess -DisableShowRecentFilesInQuickAccess -DisableShowFrequentFoldersInQuickAccess -DisableExpandToOpenFolder
+    #Set-TaskbarOptions -Size Small
+    Set-CornerNavigationOptions -EnableUsePowerShellOnWinX
+    Set-StartScreenOptions -EnableBootToDesktop -EnableDesktopBackgroundOnStart -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -EnableListDesktopAppsFirst
+    Set-TaskbarOptions -Size Large -UnLock -Dock Bottom -Combine Never
+    # Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name NavPaneExpandToCurrentFolder -Value 1
+    # Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name NavPaneShowAllFolders -Value 1
+    # Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Value 1
+    # Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name MMTaskbarMode -Value 2
+
+    Enable-RemoteDesktop
+    Enable-PSRemoting -Force -SkipNetworkProfileCheck
+
+    Disable-InternetExplorerESC
+    Disable-GameBarTips
+    Disable-BingSearch
+}
+
+function Set-UserSettings {
+    choco install taskbar-never-combine             --limitoutput
+    choco install explorer-show-all-folders         --limitoutput
+    choco install explorer-expand-to-current-folder --limitoutput
+}
+
+function Set-BaseDesktopSettings {
+    # ToDo why return?    
+    #if (Test-IsOSWindows10) {
+    #    return
+    #}
+
+    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Google\Chrome\Application\chrome.exe"
+    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)Microsoft Visual Studio\2017\Community\Common7\IDE\devenv.exe"
+    Install-ChocolateyShortcut `
+      -ShortcutFilePath "C:\Users\Admin\Desktop\Notepad++.lnk" `
+      -TargetPath "C:\Program Files\Notepad++\notepad++.exe" `
+      -WindowStyle 3 `
+      -RunAsAdmin `
+      -PinToTaskbar  
+}
+
+function Set-DevDesktopSettings {
+    if (Test-IsOSWindows10) {
+        return
+    }
+
+    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Microsoft Visual Studio 14.0\Common7\IDE\devenv.exe"
+
+    Install-ChocolateyFileAssociation ".dll" "$env:LOCALAPPDATA\JetBrains\Installations\dotPeek06\dotPeek64.exe"
+}
+
+function Update-WindowsLibraries {
+    if(-not(Test-Path Env:\BoxStarter:CustomiseFolders)) {
+        return
+    }
+    
+    Set-Volume -DriveLetter $sytemDrive -NewFileSystemLabel "OS"
+
+    $dataDriveLetter = Get-DataDrive
+    $dataDrive = "$dataDriveLetter`:"
+
+    if (Get-SystemDrive -eq $dataDriveLetter) {
+        return
+    }
+
+    Write-BoxstarterMessage "Configuring $dataDrive\"
+
+    Set-Volume -DriveLetter $dataDriveLetter -NewFileSystemLabel "Data"
+
+    $userDataPath = "$dataDrive\Data\Documents"
+    $mediaPath = "$dataDrive\Media"
+
+    Move-WindowsLibrary -libraryName "My Pictures" -newPath (Join-Path $userDataPath "Pictures")
+    Move-WindowsLibrary -libraryName "Personal"    -newPath (Join-Path $userDataPath "Documents")
+    Move-WindowsLibrary -libraryName "Desktop"     -newPath (Join-Path $userDataPath "Desktop")
+    Move-WindowsLibrary -libraryName "My Video"    -newPath (Join-Path $mediaPath "Videos")
+    Move-WindowsLibrary -libraryName "My Music"    -newPath (Join-Path $mediaPath "Music")
+    Move-WindowsLibrary -libraryName "Downloads"   -newPath "$dataDrive\Downloads"
+}
+
+function Move-WindowsLibrary {
+    param(
+        $libraryName,
+        $newPath
+    )
+
+    if (-not (Test-Path $newPath)) {
+        Move-LibraryDirectory -libraryName $libraryName -newPath $newPath
+    }
+}
+
+function New-SourceCodeFolder {
+    $sourceCodeFolder = 'GIT'
+    if (Test-Path env:\BoxStarter:SourceCodeFolder) {
+        $sourceCodeFolder = $env:BoxStarter:SourceCodeFolder
+    }
+
+    if ([System.IO.Path]::IsPathRooted($sourceCodeFolder)) {
+        $sourceCodePath = $sourceCodeFolder
+    }
+    else {
+        $drivePath = Get-DataDrive
+        $sourceCodePath = Join-Path "$drivePath`:" $sourceCodeFolder
+    }
+
+    if (-not (Test-Path $sourceCodePath)) {
+        New-Item $sourceCodePath -ItemType Directory
+    }
+}
+
+function New-InstallCache {
+    param
+    (
+        [String]
+        $InstallDrive
+    )
+
+    $tempInstallFolder = Join-Path $InstallDrive "temp\install-cache"
+
+    if (-not (Test-Path $tempInstallFolder)) {
+        New-Item $tempInstallFolder -ItemType Directory
+    }
+
+    return $tempInstallFolder
+}
+
+function Enable-ChocolateyFeatures {
+    choco feature enable --name=allowGlobalConfirmation
+}
+
+function Disable-ChocolateyFeatures {
+    choco feature disable --name=allowGlobalConfirmation
+}
+
+function Update-Path {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+    Install-ChocolateyPath -PathToInstall "$($Boxstarter.programFiles86)\Git"
+    Install-ChocolateyPath -PathToInstall "$($Boxstarter.programFiles86)\Git\bin"
+    $env:PSModulePath = $env:PSModulePath + ";C:\Program Files\Git\bin"
+}
+
 function Install-WindowsUpdate {
     if (Test-Path env:\BoxStarter:SkipWindowsUpdate) {
         return
@@ -202,47 +362,6 @@ function Install-WebPackageWithCheckpoint {
         $filename
 }
 
-function Install-CoreApps {
-    choco install googlechrome              --limitoutput
-    choco install paint.net                 --limitoutput
-    choco install 7zip.install              --limitoutput
-    choco install adobereader               --limitoutput
-
-    # pin apps that update themselves
-    choco pin add -n=googlechrome
-    choco pin add -n='paint.net'
-}
-
-function Install-SqlServer2014 {
-    param (
-        $InstallDrive
-    )
-
-    if (-not(Test-Path env:\choco:sqlserver2014:isoImage) -and -not(Test-Path env:\choco:sqlserver2014:setupFolder)) {
-        return
-    }
-
-    $dataPath = Join-Path $InstallDrive "Data\Sql"
-
-    #rejected by chocolatey.org since iso image is required  :|
-    $sqlPackageSource = "https://www.myget.org/F/nm-chocolatey-packs/api/v2"
-
-    # SQL2014 has dependency on .net 3.5
-    choco install NetFx3                 --source windowsfeatures --limitoutput
-
-    if (Test-PendingReboot) { Invoke-Reboot }
-
-    # Note: No support for Windows 7 https://msdn.microsoft.com/en-us/library/ms143506.aspx
-    $env:choco:sqlserver2014:INSTALLSQLDATADIR = $dataPath
-    $env:choco:sqlserver2014:INSTANCEID = "sql2014"
-    $env:choco:sqlserver2014:INSTANCENAME = "sql2014"
-    $env:choco:sqlserver2014:FEATURES = "SQLENGINE,ADV_SSMS"
-    $env:choco:sqlserver2014:AGTSVCACCOUNT = "NT Service\SQLAgent`$SQL2014"
-    $env:choco:sqlserver2014:SQLSVCACCOUNT = "NT Service\MSSQL`$SQL2014"
-    $env:choco:sqlserver2014:SQLCOLLATION = "SQL_Latin1_General_CP1_CI_AS"
-    choco install sqlserver2014 --source=$sqlPackageSource
-}
-
 function Install-SqlServer2016 {
     param (
         $InstallDrive
@@ -267,62 +386,137 @@ function Install-SqlServer2016 {
     choco install sqlserver2016 --source=$sqlPackageSource
 }
 
-function Install-SqlTools {
-    param (
-        $DownloadFolder
-    )
-
-    choco install sql-server-management-studio  --limitoutput
-    choco install sql-operations-studio         --limitoutput
-
-    #Install-WebPackageWithCheckpoint 'SQL Source Control V3.8' 'exe' '/quiet' $DownloadFolder ftp://support.red-gate.com/patches/SQLSourceControlFrequentUpdates/23Jul2015/SQLSourceControlFrequentUpdates_3.8.21.179.exe
-
-    #Install-WebPackageWithCheckpoint 'SQL Compare V11.6' 'exe' '/quiet' $DownloadFolder http://download.red-gate.com/checkforupdates/SQLCompare/SQLCompare_11.6.11.2463.exe
-}
-
 function Install-HomeApps {
     if (-not(Test-Path env:\BoxStarter:InstallHome)) {
         return
     }
 
-    choco install lastpass      --limitoutput
-    choco install skype         --limitoutput
-    choco install teamviewer    --limitoutput
+    choco install chocolatey
+    choco install boxstarter
+    choco install wudt
+    choco install chocolatey-core.extension
+    choco install 7zip
+    choco install allow-block-remove-firewall
+    choco install autohotkey.portable
+    choco install calibre
+    choco install chocolateygui
+    choco install ccleaner
+    #choco install cdburnerxp
+    choco install clink
+    choco install cpu-z
+    choco install dropbox
+    choco install dws.portable
+    choco install gpu-z
+    choco install hwinfo
+    choco install openhardwaremonitor
+    choco install coretemp
+    choco install crystaldiskinfo
+    choco install crystaldiskmark
+    choco install firefox
+    choco install foobar2000
+    choco install googlechrome
+    choco install googledrive
+    choco install greenshot
+    choco install irfanview
+    choco install jdk8
+    choco install jre8
+    choco install jdk9
+    choco install jre9
+    choco install k-litecodecpackfull
+    choco install lockhunter
+    choco install notepadplusplus
+    choco install glogg
+    choco install paint.Net
+    choco install pip
+    choco install qbittorrent
+    choco install rufus
+    choco install skype
+    choco install speccy
+    choco install steam
+    choco install virtualbox
+    choco install vlc
+    choco install wget
+    choco install windirstat
+    choco install winscp
+    choco install wireshark
+    choco install youtube-dl
+    choco install teamspeak
+    choco install mumble
+    choco install spotify
+    choco install ditto
+    choco install firacode
+    #choco install f.lux
+    #choco install miktex
+    #choco install TeXstudio
 
     # pin apps that update themselves
     choco pin add -n=skype
-}
-
-function Install-CoreDevApps {
-    choco install dotnetcore-sdk    --limitoutput
-
-    choco install git.install -params '"/GitAndUnixToolsOnPath"' --limitoutput
-    choco install firefox                   --limitoutput
-    choco install docker-for-windows        --limitoutput
-    choco install gitkraken                 --limitoutput
-    choco install resharper-platform        --limitoutput
-    choco install prefix                    --limitoutput
-    choco install nodejs                    --limitoutput
-
-    # pin apps that update themselves
-    choco pin add -n=gitkraken
+    choco pin add -n=steam
     choco pin add -n=firefox
-    choco pin add -n=docker-for-windows
-    choco pin add -n=resharper-platform
-}
-
-function Install-DevOpsTools {
-    choco install terraform                 --limitoutput
-    choco install packer                    --limitoutput
+    choco pin add -n=visualstudiocode
+    choco pin add -n=googlechrome
+    choco pin add -n='paint.net'
 }
 
 function Install-DevTools {
-    choco install slack                     --limitoutput
-    choco install redis-desktop-manager     --limitoutput
-    choco install fiddler4                  --limitoutput
-    choco install winscp                    --limitoutput
-    choco install nugetpackageexplorer      --limitoutput
-    choco install poshgit                   --limitoutput
+    
+    choco install sql-server-management-studio  --limitoutput
+    choco install sql-operations-studio         --limitoutput
+    choco install windowsazurelibsfornet
+    choco install NugetPackageExplorer
+    choco install curl
+    choco install cmder
+    choco install hyper
+    choco install cygwin
+    choco install firacode
+    choco install fciv
+    choco install filezilla
+    choco install gcloudsdk
+    choco install git -params '"/GitAndUnixToolsOnPath"'
+    choco install git-credential-winstore
+    choco install poshgit
+    choco install intellijidea-community
+    choco install linqpad
+    choco install nuget.commandline
+    choco install nimbletext
+    choco install posh-git
+    choco install powershell
+    choco install azure-cli
+    choco install procexp
+    choco install putty
+    choco install python
+    choco install anaconda3 /AddToPath:1
+    choco install postman
+    choco install sysinternals
+    choco install vim
+    choco install visualstudiocode
+    choco install windbg
+    choco install winmerge
+    choco install Microsoft-Hyper-V-All -source windowsFeatures
+    choco install Microsoft-Windows-Subsystem-Linux -source windowsfeatures
+    choco install docker
+    choco install docker-for-windows
+    choco install nugetpackageexplorer
+    Install-WebPackage 'Docker Toolbox' 'exe' '/SILENT /COMPONENTS="Docker,DockerMachine,DockerCompose,VirtualBox,Kitematic" /TASKS="modifypath"' $tempInstallFolder https://github.com/docker/toolbox/releases/download/v1.9.1i/DockerToolbox-1.9.1i.exe
+    #choco install poshgit
+    #choco install rapidee
+    #choco install scala
+    #choco install lessmsi
+    #choco install terraform 
+    #choco install packer
+    #choco install golang
+    #choco install vagrant
+    #choco install sql-server-express
+    #choco install tortoisegit
+    #choco install windowsazurepowershell
+    #choco install azurestorageexplorer cloudberryexplorer.azurestorage
+
+    choco install dotnetcore-sdk
+    choco install gitkraken
+
+    # pin apps that update themselves
+    choco pin add -n=gitkraken
+    choco pin add -n=docker-for-windows
 }
 
 function Install-VisualStudio2017 {
@@ -333,16 +527,6 @@ function Install-VisualStudio2017 {
     choco install visualstudio2017community --limitoutput
 
     choco pin add -n=visualstudio2017community
-}
-
-function Install-VisualStudio2017Enterprise {
-    if (-not(Test-Path env:\BoxStarter:InstallVS2017Enterprise)) {
-        return
-    }
-
-    choco install visualstudio2017enterprise    --limitoutput
-
-    choco pin add -n=visualstudio2017enterprise
 }
 
 function Install-VisualStudio2017Workloads {
@@ -357,38 +541,11 @@ function Install-VisualStudio2017Workloads {
 }
 
 function Install-VisualStudioCode {
-    # install visual studio code and extensions
-    choco install visualstudiocode  --limitoutput
 
-    choco pin add -n=visualstudiocode
+    # ToDo setup sync
+    code --install-extension Shan.code-settings-sync
 
     Update-Path
-}
-
-function Install-VSCodeExtensions {
-    # need to launch vscode so user folders are created as we can install extensions
-    $process = Start-Process code -PassThru
-    Start-Sleep -s 10
-    $process.Close()
-
-    code --install-extension ms-vscode.csharp
-    code --install-extension ms-vscode.PowerShell
-    code --install-extension DavidAnson.vscode-markdownlint
-    code --install-extension johnpapa.Angular2
-    code --install-extension donjayamanne.githistory
-    code --install-extension eg2.tslint
-    code --install-extension lukehoban.Go
-    code --install-extension msjsdiag.debugger-for-chrome
-    code --install-extension cake-build.cake-vscode
-    code --install-extension mauve.terraform
-    code --install-extension Arjun.swagger-viewer
-    code --install-extension joelday.docthis
-    code --install-extension hnw.vscode-auto-open-markdown-preview
-    code --install-extension wk-j.cake-runner
-    code --install-extension EditorConfig.editorconfig
-    code --install-extension djabraham.vscode-yaml-validation
-    code --install-extension robertohuertasm.vscode-icons
-    code --install-extension PeterJausovec.vscode-docker
 }
 
 function Install-InternetInformationServices {
@@ -437,18 +594,17 @@ function Install-DevFeatures {
         choco install Microsoft-Windows-Subsystem-Linux --source windowsfeatures --limitoutput
     }
 
-    # windows containers
     Enable-WindowsOptionalFeature -Online -FeatureName containers -All
-
-    # hyper-v (required for windows containers)
     Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
 
-}
-
-function Install-NpmPackages {
-    npm install -g typescript
-    npm install -g @angular/cli # angular2 cli
-    npm install -g yarn
+    cinst TelnetClient -source windowsFeatures
+    cinst PowerShell
+    cinst vcredist2010
+    cinst vcredist140
+    cinst dotnetcore
+    cinst dotnetfx
+    cinst mono
 }
 
 function Install-PowerShellModules {
@@ -459,144 +615,17 @@ function Install-PowerShellModules {
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Untrusted'
 }
 
-function Set-RegionalSettings {
-    #http://stackoverflow.com/questions/4235243/how-to-set-timezone-using-powershell
-    &"$env:windir\system32\tzutil.exe" /s "AUS Eastern Standard Time"
+###### Start ######
 
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortDate -Value 'dd MMM yy'
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sCountry -Value Australia
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortTime -Value 'hh:mm tt'
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sTimeFormat -Value 'hh:mm:ss tt'
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sLanguage -Value ENA
-}
-
-function Set-BaseSettings {
-    Update-ExecutionPolicy -Policy Unrestricted
-
-    $sytemDrive = Get-SystemDrive
-    Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -DisableShowProtectedOSFiles -EnableShowFileExtensions -EnableShowFullPathInTitleBar
-    Set-TaskbarOptions -Combine Never
-
-    # replace command prompt with powershell in start menu and win+x
-    Set-CornerNavigationOptions -EnableUsePowerShellOnWinX
-}
-
-function Set-UserSettings {
-    choco install taskbar-never-combine             --limitoutput
-    choco install explorer-show-all-folders         --limitoutput
-    choco install explorer-expand-to-current-folder --limitoutput
-}
-
-function Set-BaseDesktopSettings {
-    if (Test-IsOSWindows10) {
-        return
-    }
-
-    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Google\Chrome\Application\chrome.exe"
-}
-
-function Set-DevDesktopSettings {
-    if (Test-IsOSWindows10) {
-        return
-    }
-
-    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Microsoft Visual Studio 14.0\Common7\IDE\devenv.exe"
-
-    Install-ChocolateyFileAssociation ".dll" "$env:LOCALAPPDATA\JetBrains\Installations\dotPeek06\dotPeek64.exe"
-}
-
-function Update-WindowsLibraries {
-    if(-not(Test-Path Env:\BoxStarter:CustomiseFolders)) {
-        return
-    }
-    
-    Set-Volume -DriveLetter $sytemDrive -NewFileSystemLabel "OS"
-
-    $dataDriveLetter = Get-DataDrive
-    $dataDrive = "$dataDriveLetter`:"
-
-    if (Get-SystemDrive -eq $dataDriveLetter) {
-        return
-    }
-
-    Write-BoxstarterMessage "Configuring $dataDrive\"
-
-    Set-Volume -DriveLetter $dataDriveLetter -NewFileSystemLabel "Data"
-
-    $userDataPath = "$dataDrive\Data\Documents"
-    $mediaPath = "$dataDrive\Media"
-
-    Move-WindowsLibrary -libraryName "My Pictures" -newPath (Join-Path $userDataPath "Pictures")
-    Move-WindowsLibrary -libraryName "Personal"    -newPath (Join-Path $userDataPath "Documents")
-    Move-WindowsLibrary -libraryName "Desktop"     -newPath (Join-Path $userDataPath "Desktop")
-    Move-WindowsLibrary -libraryName "My Video"    -newPath (Join-Path $mediaPath "Videos")
-    Move-WindowsLibrary -libraryName "My Music"    -newPath (Join-Path $mediaPath "Music")
-    Move-WindowsLibrary -libraryName "Downloads"   -newPath "$dataDrive\Downloads"
-}
-
-function Move-WindowsLibrary {
-    param(
-        $libraryName,
-        $newPath
-    )
-
-    if (-not (Test-Path $newPath)) {
-        Move-LibraryDirectory -libraryName $libraryName -newPath $newPath
-    }
-}
-
-function New-SourceCodeFolder {
-    $sourceCodeFolder = 'sourcecode'
-    if (Test-Path env:\BoxStarter:SourceCodeFolder) {
-        $sourceCodeFolder = $env:BoxStarter:SourceCodeFolder
-    }
-
-    if ([System.IO.Path]::IsPathRooted($sourceCodeFolder)) {
-        $sourceCodePath = $sourceCodeFolder
-    }
-    else {
-        $drivePath = Get-DataDrive
-        $sourceCodePath = Join-Path "$drivePath`:" $sourceCodeFolder
-    }
-
-    if (-not (Test-Path $sourceCodePath)) {
-        New-Item $sourceCodePath -ItemType Directory
-    }
-}
-
-function New-InstallCache {
-    param
-    (
-        [String]
-        $InstallDrive
-    )
-
-    $tempInstallFolder = Join-Path $InstallDrive "temp\install-cache"
-
-    if (-not (Test-Path $tempInstallFolder)) {
-        New-Item $tempInstallFolder -ItemType Directory
-    }
-
-    return $tempInstallFolder
-}
-
-function Enable-ChocolateyFeatures {
-    choco feature enable --name=allowGlobalConfirmation
-}
-
-function Disable-ChocolateyFeatures {
-    choco feature disable --name=allowGlobalConfirmation
-}
-
-function Update-Path {
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-}
+Disable-UAC
 
 $dataDriveLetter = Get-DataDrive
 $dataDrive = "$dataDriveLetter`:"
 $tempInstallFolder = New-InstallCache -InstallDrive $dataDrive
 
 Use-Checkpoint -Function ${Function:Set-RegionalSettings} -CheckpointName 'RegionalSettings' -SkipMessage 'Regional settings are already configured'
+
+Use-Checkpoint -Function ${Function:Set-RegistrySettings} -CheckpointName 'RegistrySettings' -SkipMessage 'Registry settings are already configured'
 
 # SQL Server requires some KB patches before it will work, so windows update first
 Write-BoxstarterMessage "Windows update..."
@@ -610,8 +639,6 @@ Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName 'UserSetti
 
 Write-BoxstarterMessage "Starting installs"
 
-Use-Checkpoint -Function ${Function:Install-CoreApps} -CheckpointName 'InstallCoreApps' -SkipMessage 'Core apps are already installed'
-
 Use-Checkpoint -Function ${Function:Set-BaseDesktopSettings} -CheckpointName 'BaseDesktopSettings' -SkipMessage 'Base desktop settings are already configured'
 
 if (Test-Path env:\BoxStarter:InstallDev) {
@@ -623,21 +650,10 @@ if (Test-Path env:\BoxStarter:InstallDev) {
     #setup iis
     Use-Checkpoint -Function ${Function:Install-InternetInformationServices} -CheckpointName 'InternetInformationServices' -SkipMessage 'IIS features are already configured'
 
-    #install sql tools
-    Use-Checkpoint -Function ${Function:Install-SqlTools} -CheckpointName 'SqlTools' -SkipMessage 'SQL Tools are already installed' $tempInstallFolder
-
     if (Test-PendingReboot) { Invoke-Reboot }
-
-    #install sql server 2014
-    Use-Checkpoint -Function ${Function:Install-SqlServer2014} -CheckpointName 'SqlServer2014' -SkipMessage 'SQL Server 2014 are already installed' $dataDrive
-
-       if (Test-PendingReboot) { Invoke-Reboot }
 
     #install sql server 2016
     Use-Checkpoint -Function ${Function:Install-SqlServer2016} -CheckpointName 'SqlServer2016' -SkipMessage 'SQL Server 2016 are already installed' $dataDrive
-
-    #install vs2017 enterprise
-    Use-Checkpoint -Function ${Function:Install-VisualStudio2017Enterprise} -CheckpointName 'VisualStudio2017Enterprise' -SkipMessage 'Visual Studio 2017 Enterprise is already installed'
 
     #install vs2017 community
     Use-Checkpoint -Function ${Function:Install-VisualStudio2017} -CheckpointName 'VisualStudio2017Community' -SkipMessage 'Visual Studio 2017 Community is already installed'
@@ -647,16 +663,9 @@ if (Test-Path env:\BoxStarter:InstallDev) {
 
     #install vscode and extensions
     Use-Checkpoint -Function ${Function:Install-VisualStudioCode} -CheckpointName 'VisualStudioCode' -SkipMessage 'VSCode is already installed'
-    Use-Checkpoint -Function ${Function:Install-VSCodeExtensions} -CheckpointName 'VSCodeExtensions' -SkipMessage 'VSCode extensions are already installed'
 
-    #install core apps needed for dev
-    Use-Checkpoint -Function ${Function:Install-CoreDevApps} -CheckpointName 'CoreDevApps' -SkipMessage 'Core dev apps are already installed'
-
-    #install extra apps used for dev
+    #install apps used for dev
     Use-Checkpoint -Function ${Function:Install-DevTools} -CheckpointName 'DevTools' -SkipMessage 'Dev tools are already installed'
-
-    #install devops apps used for dev
-    Use-Checkpoint -Function ${Function:Install-DevOpsTools} -CheckpointName 'DevOpsTools' -SkipMessage 'DevOps tools are already installed'
 
     # make folder for source code
     New-SourceCodeFolder
@@ -681,8 +690,6 @@ if (Test-PendingReboot) { Invoke-Reboot }
 # reload path environment variable
 Update-Path
 
-Use-Checkpoint -Function ${Function:Install-NpmPackages} -CheckpointName 'NpmPackages' -SkipMessage 'NPM packages are already installed'
-
 Use-Checkpoint -Function ${Function:Install-PowerShellModules} -CheckpointName 'PowerShellModules' -SkipMessage 'PowerShell modules are already installed'
 
 # set HOME to user profile for git
@@ -691,5 +698,7 @@ Use-Checkpoint -Function ${Function:Install-PowerShellModules} -CheckpointName '
 # rerun windows update after we have installed everything
 Write-BoxstarterMessage "Windows update..."
 Install-WindowsUpdate
+
+Enable-UAC
 
 Clear-Checkpoints
