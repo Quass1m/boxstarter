@@ -489,7 +489,7 @@ function Install-DevTools {
     choco install postman
     choco install sysinternals
     choco install vim
-    choco install visualstudiocode
+    choco install vscode
     choco install windbg
     choco install winmerge
     choco install Microsoft-Hyper-V-All -source windowsFeatures
@@ -504,6 +504,7 @@ function Install-DevTools {
     #choco install lessmsi
     #choco install terraform 
     #choco install draft 
+    #choco install kubernetes-helm 
     #choco install packer
     #choco install golang
     #choco install vagrant
