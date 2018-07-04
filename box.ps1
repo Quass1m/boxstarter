@@ -503,6 +503,7 @@ function Install-DevTools {
     #choco install scala
     #choco install lessmsi
     #choco install terraform 
+    #choco install draft 
     #choco install packer
     #choco install golang
     #choco install vagrant
@@ -512,6 +513,7 @@ function Install-DevTools {
     #choco install azurestorageexplorer cloudberryexplorer.azurestorage
 
     choco install dotnetcore-sdk
+    choco install azure-functions-core-tools
     choco install gitkraken
 
     # pin apps that update themselves
