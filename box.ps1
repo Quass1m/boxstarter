@@ -615,6 +615,7 @@ function Install-PowerShellModules {
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Trusted'
     Install-Module -Name Carbon -AllowClobber
     Install-Module -Name PowerShellHumanizer
+    Install-Module -Name posh-git
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Untrusted'
 }
 
