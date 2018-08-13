@@ -489,7 +489,7 @@ function Install-DevTools {
     choco install postman
     choco install sysinternals
     choco install vim
-    choco install visualstudiocode
+    choco install vscode
     choco install windbg
     choco install winmerge
     choco install Microsoft-Hyper-V-All -source windowsFeatures
@@ -503,6 +503,8 @@ function Install-DevTools {
     #choco install scala
     #choco install lessmsi
     #choco install terraform 
+    #choco install draft 
+    #choco install kubernetes-helm 
     #choco install packer
     #choco install golang
     #choco install vagrant
@@ -512,6 +514,7 @@ function Install-DevTools {
     #choco install azurestorageexplorer cloudberryexplorer.azurestorage
 
     choco install dotnetcore-sdk
+    choco install azure-functions-core-tools
     choco install gitkraken
 
     # pin apps that update themselves
@@ -612,6 +615,7 @@ function Install-PowerShellModules {
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Trusted'
     Install-Module -Name Carbon -AllowClobber
     Install-Module -Name PowerShellHumanizer
+    Install-Module -Name posh-git
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Untrusted'
 }
 
