@@ -31,9 +31,11 @@
     [Environment]::SetEnvironmentVariable("BoxStarter:InstallHome", "1", "Process") # for right now
 
 #START
-    START http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/JonCubed/boxstarter/master/box.ps1
+    START http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/Quass1m/boxstarter/master/box.ps1
 
-    wget -Uri 'https://raw.githubusercontent.com/JonCubed/boxstarter/master/bootstrap.ps1' -OutFile "$($env:temp)\bootstrap.ps1";&Invoke-Command -ScriptBlock { &"$($env:temp)\bootstrap.ps1" -InstallDev -SkipWindowsUpdate -SqlServer2014IsoImage 'c:\sql2014\en_sql_server_2014_standard_edition_x64_dvd_3932034.iso' }
+    wget -Uri 'https://raw.githubusercontent.com/Quass1m/boxstarter/master/bootstrap.ps1' -OutFile "$($env:temp)\bootstrap.ps1";&Invoke-Command -ScriptBlock { &"$($env:temp)\bootstrap.ps1" -InstallDev -SkipWindowsUpdate -SqlServer2014IsoImage 'c:\sql2014\en_sql_server_2014_standard_edition_x64_dvd_3932034.iso' }
+
+    http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/Quass1m/boxstarter/master/box.ps1
 #>
 
 $Boxstarter.RebootOk = $true
