@@ -4,6 +4,9 @@ param
     $InstallDev = $false,
 
     [Switch]
+    $InstallLinuxSubsystem = $false,
+
+    [Switch]
     $InstallHome = $true,
 
     [String]
@@ -55,6 +58,11 @@ function Set-EnvironmentVariable
 if ($InstallDev)
 {
     Set-EnvironmentVariable -Key "BoxStarter:InstallDev" -Value "1"
+}
+
+if ($InstallLinuxSubsystem)
+{
+    Set-EnvironmentVariable -Key "BoxStarter:InstallLinuxSubsystem" -Value "1"
 }
 
 if ($InstallHome)

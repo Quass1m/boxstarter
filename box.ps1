@@ -464,8 +464,6 @@ function Install-DevTools {
     
     choco install sql-server-management-studio  --limitoutput
     choco install sql-operations-studio         --limitoutput
-    choco install windowsazurelibsfornet
-    choco install NugetPackageExplorer
     choco install curl
     choco install cmder
     choco install hyper
@@ -494,13 +492,18 @@ function Install-DevTools {
     choco install vscode
     choco install windbg
     choco install winmerge
-    choco install Microsoft-Hyper-V-All -source windowsFeatures
-    choco install Microsoft-Windows-Subsystem-Linux -source windowsfeatures
     choco install docker
-    choco install docker-for-windows
-    choco install nugetpackageexplorer
+    choco install docker-for-windows    
     Install-WebPackage 'Docker Toolbox' 'exe' '/SILENT /COMPONENTS="Docker,DockerMachine,DockerCompose,VirtualBox,Kitematic" /TASKS="modifypath"' $tempInstallFolder https://github.com/docker/toolbox/releases/download/v1.9.1i/DockerToolbox-1.9.1i.exe
-    #choco install poshgit
+    choco install nugetpackageexplorer
+    choco install poshgit
+    choco install windowsazurepowershell
+    choco install microsoftazurestorageexplorer
+    choco install servicebusexplorer
+    choco install dotnetcore-sdk
+    choco install azure-functions-core-tools
+    choco install gitkraken
+    #choco install windowsazurelibsfornet
     #choco install rapidee
     #choco install scala
     #choco install lessmsi
@@ -510,14 +513,8 @@ function Install-DevTools {
     #choco install packer
     #choco install golang
     #choco install vagrant
-    #choco install sql-server-express
     #choco install tortoisegit
-    #choco install windowsazurepowershell
     #choco install azurestorageexplorer cloudberryexplorer.azurestorage
-
-    choco install dotnetcore-sdk
-    choco install azure-functions-core-tools
-    choco install gitkraken
 
     # pin apps that update themselves
     choco pin add -n=gitkraken
@@ -546,7 +543,6 @@ function Install-VisualStudio2017Workloads {
 }
 
 function Install-VisualStudioCode {
-
     # ToDo setup sync
     code --install-extension Shan.code-settings-sync
 
@@ -593,16 +589,6 @@ function Install-InternetInformationServices {
 }
 
 function Install-DevFeatures {
-    # Bash for windows
-    $features = choco list --source windowsfeatures
-    if ($features | Where-Object {$_ -like "*Linux*"}) {
-        choco install Microsoft-Windows-Subsystem-Linux --source windowsfeatures --limitoutput
-    }
-
-    Enable-WindowsOptionalFeature -Online -FeatureName containers -All
-    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
-    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
-
     cinst TelnetClient -source windowsFeatures
     cinst PowerShell
     cinst vcredist2010
@@ -610,6 +596,19 @@ function Install-DevFeatures {
     cinst dotnetcore
     cinst dotnetfx
     cinst mono
+}
+
+function Install-LinuxSubsystem {
+    # Bash for windows
+    $features = choco list --source windowsfeatures
+    if ($features | Where-Object {$_ -like "*Linux*"}) {
+        choco install Microsoft-Hyper-V-All -source windowsFeatures
+        choco install Microsoft-Windows-Subsystem-Linux --source windowsfeatures --limitoutput
+    }
+
+    Enable-WindowsOptionalFeature -Online -FeatureName containers -All
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
 }
 
 function Install-PowerShellModules {
@@ -650,7 +649,7 @@ Use-Checkpoint -Function ${Function:Set-BaseDesktopSettings} -CheckpointName 'Ba
 if (Test-Path env:\BoxStarter:InstallDev) {
     Write-BoxstarterMessage "Installing dev apps"
 
-    #enale dev related windows features
+    #enable dev related windows features
     Use-Checkpoint -Function ${Function:Install-DevFeatures} -CheckpointName 'DevFeatures' -SkipMessage 'Windows dev features are already configured'
 
     #setup iis
@@ -677,6 +676,15 @@ if (Test-Path env:\BoxStarter:InstallDev) {
     New-SourceCodeFolder
 
     Use-Checkpoint -Function ${Function:Set-DevDesktopSettings} -CheckpointName 'DevDesktopSettings' -SkipMessage 'Dev desktop settings are already configured'
+}
+
+if (Test-Path env:\BoxStarter:LinuxSubsystem) {
+    Write-BoxstarterMessage "Installing linux subsystem apps"
+
+    ##install LinuxSubsystem
+    Use-Checkpoint -Function ${Function:Install-LinuxSubsystem} -CheckpointName 'LinuxSubsystem' -SkipMessage 'LinuxSubsystem is already configured'
+
+    if (Test-PendingReboot) { Invoke-Reboot }
 }
 
 #install apps for home use
