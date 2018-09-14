@@ -38,9 +38,9 @@
     http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/Quass1m/boxstarter/master/box.ps1
 #>
 
-$Boxstarter.RebootOk = $true
-$Boxstarter.NoPassword = $false
-$Boxstarter.AutoLogin = $true
+#$Boxstarter.RebootOk = $true
+#$Boxstarter.NoPassword = $false
+#$Boxstarter.AutoLogin = $true
 
 $checkpointPrefix = 'BoxStarter:Checkpoint:'
 
@@ -144,11 +144,13 @@ function Get-DataDrive {
 
 function Set-RegionalSettings {
     #http://stackoverflow.com/questions/4235243/how-to-set-timezone-using-powershell
-    &"$env:windir\system32\tzutil.exe" /s "AUS Eastern Standard Time"
+    &"$env:windir\system32\tzutil.exe" /s "Central European Standard Time"
 
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortDate -Value 'dd MMM yy'
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sCountry -Value Australia
-    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortTime -Value 'hh:mm tt'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortDate -Value 'dd/MM/yyyy'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sLongDate -Value 'dd MMMM yyyy'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sCountry -Value Poland
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortTime -Value 'HH:mm'
+    Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sShortTime -Value 'HH:mm:ss'
     Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sTimeFormat -Value 'hh:mm:ss tt'
     Set-ItemProperty -Path "HKCU:\Control Panel\International" -Name sLanguage -Value ENA
 }
@@ -196,9 +198,8 @@ function Set-BaseDesktopSettings {
     #}
 
     Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Google\Chrome\Application\chrome.exe"
-    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)Microsoft Visual Studio\2017\Community\Common7\IDE\devenv.exe"
     Install-ChocolateyShortcut `
-      -ShortcutFilePath "C:\Users\Admin\Desktop\Notepad++.lnk" `
+      -ShortcutFilePath "C:\Users\konra\Desktop\Notepad++.lnk" `
       -TargetPath "C:\Program Files\Notepad++\notepad++.exe" `
       -WindowStyle 3 `
       -RunAsAdmin `
@@ -622,6 +623,12 @@ function Install-PowerShellModules {
 
 ###### Start ######
 
+Set-EnvironmentVariable -Key "BoxStarter:InstallDev" -Value "1"
+Set-EnvironmentVariable -Key "BoxStarter:InstallHome" -Value "1"
+Set-EnvironmentVariable -Key "BoxStarter:SkipWindowsUpdate" -Value "1"
+
+######3
+
 Disable-UAC
 
 $dataDriveLetter = Get-DataDrive
@@ -645,6 +652,15 @@ Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName 'UserSetti
 Write-BoxstarterMessage "Starting installs"
 
 Use-Checkpoint -Function ${Function:Set-BaseDesktopSettings} -CheckpointName 'BaseDesktopSettings' -SkipMessage 'Base desktop settings are already configured'
+
+if (Test-Path env:\BoxStarter:InstallHome) {
+    Write-BoxstarterMessage "Installing home apps"
+
+    #enable dev related windows features
+    Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName 'InstallHomeApps' -SkipMessage 'Home apps are already installed'
+
+    if (Test-PendingReboot) { Invoke-Reboot }
+}
 
 if (Test-Path env:\BoxStarter:InstallDev) {
     Write-BoxstarterMessage "Installing dev apps"
@@ -716,3 +732,4 @@ Install-WindowsUpdate
 Enable-UAC
 
 Clear-Checkpoints
+Write-BoxstarterMessage "--- END ---"

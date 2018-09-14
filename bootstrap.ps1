@@ -1,3 +1,6 @@
+# .\bootstrap.ps1 -InstallDev=$true -SourceCodeFolder "C:\GIT" -SkipWindowsUpdate
+# START http://boxstarter.org/package/nr/url?C:\boxstarter-master\box.ps1
+
 param
 (
     [Switch]
@@ -55,19 +58,21 @@ function Set-EnvironmentVariable
 
 }
 
+Write-Host "Path:" $MyInvocation.MyCommand.Path
+
 if ($InstallDev)
 {
     Set-EnvironmentVariable -Key "BoxStarter:InstallDev" -Value "1"
 }
 
-if ($InstallLinuxSubsystem)
-{
-    Set-EnvironmentVariable -Key "BoxStarter:InstallLinuxSubsystem" -Value "1"
-}
-
 if ($InstallHome)
 {
     Set-EnvironmentVariable -Key "BoxStarter:InstallHome" -Value "1"
+}
+
+if ($InstallLinuxSubsystem)
+{
+    Set-EnvironmentVariable -Key "BoxStarter:InstallLinuxSubsystem" -Value "1"
 }
 
 if ($DataDrive)
@@ -100,23 +105,9 @@ if ($InstallVS2017Enterprise)
     Set-EnvironmentVariable -Key "BoxStarter:InstallVS2017Enterprise" -Value "1"
 }
 
-if ($CustomiseFolders)
-{
-    Set-EnvironmentVariable -Key "BoxStarter:CustomiseFolders" -Value "1"
-}
-
-if ($SqlServer2016IsoImage)
-{
-    Set-EnvironmentVariable -Key "choco:sqlserver2016:isoImage" -Value $SqlServer2016IsoImage
-
-    if ($SqlServer2016SaPassword) {
-        # enable mixed mode auth
-        $env:choco:sqlserver2016:SECURITYMODE="SQL"
-        $env:choco:sqlserver2016:SAPWD=$SqlServer2016SaPassword
-    }
-}
-
-$installScript = 'https://raw.githubusercontent.com/Quass1m/boxstarter/master/box.ps1'
+#$installScript = 'https://raw.githubusercontent.com/Quass1m/boxstarter/master/box.ps1'
+#$installScript =  Join-Path $MyInvocation.MyCommand.Path 'box.ps1'
+$installScript =  C:\boxstarter-master\box.ps1
 $webLauncherUrl = "http://boxstarter.org/package/nr/url?$installScript"
 $edgeVersion = Get-AppxPackage -Name Microsoft.MicrosoftEdge
 
