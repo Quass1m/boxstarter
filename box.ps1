@@ -674,7 +674,7 @@ if (Test-Path env:\BoxStarter:InstallDev) {
     if (Test-PendingReboot) { Invoke-Reboot }
 
     #install sql server 2016
-    Use-Checkpoint -Function ${Function:Install-SqlServer2016} -CheckpointName 'SqlServer2016' -SkipMessage 'SQL Server 2016 are already installed' $dataDrive
+    #Use-Checkpoint -Function ${Function:Install-SqlServer2016} -CheckpointName 'SqlServer2016' -SkipMessage 'SQL Server 2016 are already installed' $dataDrive
 
     #install vs2017 community
     Use-Checkpoint -Function ${Function:Install-VisualStudio2017} -CheckpointName 'VisualStudio2017Community' -SkipMessage 'Visual Studio 2017 Community is already installed'
