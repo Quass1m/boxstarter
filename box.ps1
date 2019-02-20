@@ -458,7 +458,7 @@ function Install-HomeApps {
     choco pin add -n=firefox
     choco pin add -n=visualstudiocode
     choco pin add -n=googlechrome
-    choco pin add -n='paint.net'
+    #choco pin add -n='paint.net'
 }
 
 function Install-DevTools {
@@ -493,7 +493,7 @@ function Install-DevTools {
     choco install vscode
     choco install windbg
     choco install winmerge
-    choco install docker
+    choco install docker-cli
     choco install docker-for-windows    
     Install-WebPackage 'Docker Toolbox' 'exe' '/SILENT /COMPONENTS="Docker,DockerMachine,DockerCompose,VirtualBox,Kitematic" /TASKS="modifypath"' $tempInstallFolder https://github.com/docker/toolbox/releases/download/v1.9.1i/DockerToolbox-1.9.1i.exe
     choco install nugetpackageexplorer
