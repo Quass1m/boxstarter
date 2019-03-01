@@ -446,7 +446,6 @@ function Install-HomeApps {
     choco install teamspeak
     choco install mumble
     choco install spotify
-    choco install ditto
     choco install firacode
     #choco install f.lux
     #choco install miktex
