@@ -55,6 +55,15 @@ function Get-Checkpoint {
     [Environment]::GetEnvironmentVariable($key, "Process")
 }
 
+function Get-BoxstarterEnvironmentVariables {
+    param
+    (
+        [Parameter(Mandatory = $false)] [string] $Key
+    )
+
+    return Get-Item -Path Env:* | Where-Object {$_.Name -Like 'Boxstarter*'}
+}
+
 function Clear-Checkpoints {
     $checkpointMarkers = Get-ChildItem Env: | where { $_.name -like "$checkpointPrefix*" } | Select -ExpandProperty name
     foreach ($checkpointMarker in $checkpointMarkers) {
@@ -116,8 +125,8 @@ function Get-SystemDrive {
 function Get-DataDrive {
     $driveLetter = Get-SystemDrive
 
-    if ((Test-Path env:\BoxStarter:DataDrive) -and (Test-Path $env:BoxStarter:DataDrive)) {
-        $driveLetter = $env:BoxStarter:DataDrive
+    if ((Test-Path env:\BoxStarter:Option:DataDrive) -and (Test-Path $env:BoxStarter:Option:DataDrive)) {
+        $driveLetter = $env:BoxStarter:Option:DataDrive
     }
 
     return $driveLetter
@@ -187,18 +196,8 @@ function Set-BaseDesktopSettings {
       -PinToTaskbar  
 }
 
-function Set-DevDesktopSettings {
-    if (Test-IsOSWindows10) {
-        return
-    }
-
-    Install-ChocolateyPinnedTaskBarItem "$($Boxstarter.programFiles86)\Microsoft Visual Studio 14.0\Common7\IDE\devenv.exe"
-
-    Install-ChocolateyFileAssociation ".dll" "$env:LOCALAPPDATA\JetBrains\Installations\dotPeek06\dotPeek64.exe"
-}
-
 function Update-WindowsLibraries {
-    if(-not(Test-Path Env:\BoxStarter:CustomiseFolders)) {
+    if(-not(Test-Path Env:\BoxStarter:Option:CustomiseFolders)) {
         return
     }
     
@@ -239,8 +238,8 @@ function Move-WindowsLibrary {
 
 function New-SourceCodeFolder {
     $sourceCodeFolder = 'GIT'
-    if (Test-Path env:\BoxStarter:SourceCodeFolder) {
-        $sourceCodeFolder = $env:BoxStarter:SourceCodeFolder
+    if (Test-Path env:\BoxStarter:Option:SourceCodeFolder) {
+        $sourceCodeFolder = $env:BoxStarter:Option:SourceCodeFolder
     }
 
     if ([System.IO.Path]::IsPathRooted($sourceCodeFolder)) {
@@ -302,7 +301,7 @@ function Update-Path {
 }
 
 function Install-WindowsUpdate {
-    if (Test-Path env:\BoxStarter:SkipWindowsUpdate) {
+    if (Test-Path env:\BoxStarter:Option:SkipWindowsUpdate) {
         return
     }
 
@@ -360,32 +359,8 @@ function Install-WebPackageWithCheckpoint {
         $filename
 }
 
-function Install-SqlServer2016 {
-    param (
-        $InstallDrive
-    )
-
-    if (-not (Test-Path env:\choco:sqlserver2016:isoImage) -and -not(Test-Path env:\choco:sqlserver2016:setupFolder)) {
-        return
-    }
-
-    $dataPath = Join-Path $InstallDrive "Data\Sql"
-
-    #rejected by chocolatey.org since iso image is required  :|
-    $sqlPackageSource = "https://www.myget.org/F/nm-chocolatey-packs/api/v2"
-
-    # Note: No support for Windows 7 https://msdn.microsoft.com/en-us/library/ms143506.aspx
-    $env:choco:sqlserver2016:INSTALLSQLDATADIR = $dataPath
-    $env:choco:sqlserver2016:INSTANCEID = "sql2016"
-    $env:choco:sqlserver2016:INSTANCENAME = "sql2016"
-    $env:choco:sqlserver2016:AGTSVCACCOUNT = "NT Service\SQLAgent`$SQL2016"
-    $env:choco:sqlserver2016:SQLSVCACCOUNT = "NT Service\MSSQL`$SQL2016"
-    $env:choco:sqlserver2016:SQLCOLLATION = "SQL_Latin1_General_CP1_CI_AS"
-    Install-App -Name sqlserver2016 -Args '--source=$sqlPackageSource'
-}
-
 function Install-VisualStudio2017 {
-    if (-not(Test-Path env:\BoxStarter:InstallVS2017Community)) {
+    if (-not(Test-Path env:\BoxStarter:Option:InstallVS2017Community)) {
         return
     }
 
@@ -395,7 +370,7 @@ function Install-VisualStudio2017 {
 }
 
 function Install-VisualStudio2017Workloads {
-    if (-not(Test-Path env:\BoxStarter:InstallVS2017Community) -and -not(Test-Path env:\BoxStarter:InstallVS2017Enterprise)) {
+    if (-not(Test-Path env:\BoxStarter:Option:InstallVS2017Community) -and -not(Test-Path env:\BoxStarter:Option:InstallVS2017Enterprise)) {
         return
     }
 
@@ -405,7 +380,7 @@ function Install-VisualStudio2017Workloads {
     Install-App -Name visualstudio2017-workload-data             -Args '--limitoutput --includeOptional'
 }
 
-function Install-VisualStudioCode {
+function Install-VisualStudioCodeExtensions {
     # ToDo setup sync
     code --install-extension Shan.code-settings-sync
 }
@@ -444,7 +419,7 @@ function Install-InternetInformationServices {
     # Security Features
     Install-App -Name IIS-BasicAuthentication          -Args '--source windowsfeatures --limitoutput'
 
-    if (Test-Path env:\BoxStarter:EnableWindowsAuthFeature) {
+    if (Test-Path env:\BoxStarter:Option:EnableWindowsAuthFeature) {
         Install-App -Name IIS-WindowsAuthentication    -Args '--source windowsfeatures --limitoutput'
     }
 }

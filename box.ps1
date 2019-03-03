@@ -1,39 +1,27 @@
 <#
-
-#OPTIONAL
-    [Environment]::SetEnvironmentVariable("BoxStarter:InstallDev", "1", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("BoxStarter:InstallDev", "1", "Process") # for right now
-
-    [Environment]::SetEnvironmentVariable("BoxStarter:DataDrive", "D", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("BoxStarter:DataDrive", "D", "Process") # for right now
-
-    [Environment]::SetEnvironmentVariable("BoxStarter:SourceCodeFolder", "git", "Machine") # relative path to for reboots
-    [Environment]::SetEnvironmentVariable("BoxStarter:SourceCodeFolder", "git", "Process") # for right now
-
-    [Environment]::SetEnvironmentVariable("BoxStarter:SkipWindowsUpdate", "1", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("BoxStarter:SkipWindowsUpdate", "1", "Process") # for right now
-
-    [Environment]::SetEnvironmentVariable("BoxStarter:EnableWindowsAuthFeature", "1", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("BoxStarter:EnableWindowsAuthFeature", "1", "Process") # for right now
-
-    [Environment]::SetEnvironmentVariable("choco:sqlserver2016:isoImage", "D:\Downloads\en_sql_server_2016_rc_2_x64_dvd_8509698.iso", "Machine") # for reboots
-    [Environment]::SetEnvironmentVariable("choco:sqlserver2016:isoImage", "D:\Downloads\en_sql_server_2016_rc_2_x64_dvd_8509698.iso", "Process") # for right now
-
 #START
     START http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/kpietralik/boxstarter/master/box.ps1
-
-    wget -Uri 'https://raw.githubusercontent.com/kpietralik/boxstarter/master/bootstrap.ps1' -OutFile "$($env:temp)\bootstrap.ps1";&Invoke-Command -ScriptBlock { &"$($env:temp)\bootstrap.ps1" -InstallDev -SkipWindowsUpdate -SqlServer2014IsoImage 'c:\sql2014\en_sql_server_2014_standard_edition_x64_dvd_3932034.iso' }
-
-    http://boxstarter.org/package/nr/url?http://boxstarter.org/package/nr/url?https://raw.githubusercontent.com/kpietralik/boxstarter/master/box.ps1
 #>
+
+### ToDo:
+# Update-Path
+# take care of chocolatey and boxstarter module dependency at start
+# log each app status ($LASTEXITCODE?)
+# log section complete status
+# display all input information
+# display final status
+# defaults: only home apps?
+# echo each install
+# split info multiple files and modules
+# unify usage of 'SetEnvironmentVariable'
+# powerplans.ps1 as switch
+# add switch to only clean checkpoints
 
 #$Boxstarter.RebootOk = $true
 #$Boxstarter.NoPassword = $false
 #$Boxstarter.AutoLogin = $true
 
 . .\box_functions.ps1
-
-$checkpointPrefix = 'BoxStarter:Checkpoint:'
 
 function Install-HomeApps {
     if (-not(Test-Path env:\BoxStarter:InstallHome)) {
@@ -43,7 +31,8 @@ function Install-HomeApps {
     $apps = @(
         ('chocolatey',''),
         ('boxstarter',''),
-        ('chocolatey-core.extension',''),
+        ('chocolatey-core.extension',''),        
+        ('vscode',''),
         ('7zip',''),
         ('allow-block-remove-firewall',''),
         ('autohotkey.portable',''),
@@ -96,6 +85,11 @@ function Install-HomeApps {
         #('TeXstudio',''),
     )
 
+    
+    # Install vscode extensions
+    Use-Checkpoint -Function ${Function:Install-VisualStudioCodeExtensions} -CheckpointName '$checkpointPrefix:VisualStudioCodeExtensions' -SkipMessage 'VSCode extensions are already installed'
+
+
     foreach ($app in $apps) {
         Install-App -Name $app[0] -Args $app[0]
     }
@@ -105,7 +99,7 @@ function Install-HomeApps {
         'skype',
         'steam',
         'firefox',
-        'visualstudiocode',
+        'vscode',
         'googlechrome'
     )
 
@@ -120,8 +114,6 @@ function Install-DevTools {
     }
 	
     $apps = @(
-        ('sql-server-management-studio', '--limitoutput'),
-        ('sql-operations-studio', '--limitoutput'),
         ('curl',''),
 		('sql-server-management-studio', '--limitoutput'),
 		('sql-operations-studio', '--limitoutput'),
@@ -193,101 +185,84 @@ Set-BoxstarterEnvironmentVariable -Key "BoxStarter:InstallDev" -Value "1"
 Set-BoxstarterEnvironmentVariable -Key "BoxStarter:InstallHome" -Value "1"
 Set-BoxstarterEnvironmentVariable -Key "BoxStarter:SkipWindowsUpdate" -Value "1"
 
-######3
+######
+
+# Display boxstarter environmant variables:
+$options = Get-BoxstarterEnvironmentVariables
+
+foreach($opt in $options) {
+    Write-BoxstarterMessage "Env '$($opt.Name) = $($opt.Value)'" -color Gray
+}
+
+######
 
 Disable-UAC
 
 $dataDriveLetter = Get-DataDrive
 $dataDrive = "$dataDriveLetter`:"
 $tempInstallFolder = New-InstallCache -InstallDrive $dataDrive
+$checkpointPrefix = 'BoxStarter:Checkpoint:'
 
-Use-Checkpoint -Function ${Function:Set-RegionalSettings} -CheckpointName 'RegionalSettings' -SkipMessage 'Regional settings are already configured'
+Write-BoxstarterMessage "Registry and regional settings..."
+Use-Checkpoint -Function ${Function:Set-RegionalSettings} -CheckpointName '$checkpointPrefix:RegionalSettings' -SkipMessage 'Regional settings are already configured'
+Use-Checkpoint -Function ${Function:Set-RegistrySettings} -CheckpointName '$checkpointPrefix:RegistrySettings' -SkipMessage 'Registry settings are already configured'
 
-Use-Checkpoint -Function ${Function:Set-RegistrySettings} -CheckpointName 'RegistrySettings' -SkipMessage 'Registry settings are already configured'
-
-# SQL Server requires some KB patches before it will work, so windows update first
 Write-BoxstarterMessage "Windows update..."
 Install-WindowsUpdate
 
 # Disable chocolatey default confirmation behaviour (no need for --yes)
-Use-Checkpoint -Function ${Function:Enable-ChocolateyFeatures} -CheckpointName 'IntialiseChocolatey' -SkipMessage 'Chocolatey features already configured'
+Use-Checkpoint -Function ${Function:Enable-ChocolateyFeatures} -CheckpointName '$checkpointPrefix:IntialiseChocolatey' -SkipMessage 'Chocolatey features already configured'
 
-Use-Checkpoint -Function ${Function:Set-BaseSettings} -CheckpointName 'BaseSettings' -SkipMessage 'Base settings are already configured'
-Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName 'UserSettings' -SkipMessage 'User settings are already configured'
+Write-BoxstarterMessage "Base, User and Desktop settings..."
+Use-Checkpoint -Function ${Function:Set-BaseSettings} -CheckpointName '$checkpointPrefix:BaseSettings' -SkipMessage 'Base settings are already configured'
+Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName '$checkpointPrefix:UserSettings' -SkipMessage 'User settings are already configured'
+Use-Checkpoint -Function ${Function:Set-BaseDesktopSettings} -CheckpointName '$checkpointPrefix:BaseDesktopSettings' -SkipMessage 'Base desktop settings are already configured'
 
-Write-BoxstarterMessage "Starting installs"
 
-Use-Checkpoint -Function ${Function:Set-BaseDesktopSettings} -CheckpointName 'BaseDesktopSettings' -SkipMessage 'Base desktop settings are already configured'
+# Move Windows libraries to data drive
+Use-Checkpoint -Function ${Function:Update-WindowsLibraries} -CheckpointName '$checkpointPrefix:WindowsLibraries' -SkipMessage 'Libraries are already configured'
 
-if (Test-Path env:\BoxStarter:InstallHome) {
-    Write-BoxstarterMessage "Installing home apps"
-
-    #enable dev related windows features
-    Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName 'InstallHomeApps' -SkipMessage 'Home apps are already installed'
-
-    if (Test-PendingReboot) { Invoke-Reboot }
-}
-
-if (Test-Path env:\BoxStarter:InstallDev) {
-    Write-BoxstarterMessage "Installing dev apps"
-
-    #enable dev related windows features
-    Use-Checkpoint -Function ${Function:Install-DevFeatures} -CheckpointName 'DevFeatures' -SkipMessage 'Windows dev features are already configured'
-
-    #setup iis
-    Use-Checkpoint -Function ${Function:Install-InternetInformationServices} -CheckpointName 'InternetInformationServices' -SkipMessage 'IIS features are already configured'
-
-    if (Test-PendingReboot) { Invoke-Reboot }
-
-    #install apps used for dev
-    Use-Checkpoint -Function ${Function:Install-DevTools} -CheckpointName 'DevTools' -SkipMessage 'Dev tools are already installed'
-
-    # make folder for source code
-    New-SourceCodeFolder
-
-    #install sql server 2016
-    #Use-Checkpoint -Function ${Function:Install-SqlServer2016} -CheckpointName 'SqlServer2016' -SkipMessage 'SQL Server 2016 are already installed' $dataDrive
-
-    #install vs2017 community
-    #Use-Checkpoint -Function ${Function:Install-VisualStudio2017} -CheckpointName 'VisualStudio2017Community' -SkipMessage 'Visual Studio 2017 Community is already installed'
-
-    #install vs2017 workloads
-    #Use-Checkpoint -Function ${Function:Install-VisualStudio2017Workloads} -CheckpointName 'VisualStudio2017Workloads' -SkipMessage 'Visual Studio 2017 Workloads are already installed'
-
-    #install vscode and extensions
-    Use-Checkpoint -Function ${Function:Install-VisualStudioCode} -CheckpointName 'VisualStudioCode' -SkipMessage 'VSCode is already installed'
-
-    Use-Checkpoint -Function ${Function:Set-DevDesktopSettings} -CheckpointName 'DevDesktopSettings' -SkipMessage 'Dev desktop settings are already configured'
-}
-
-if (Test-Path env:\BoxStarter:LinuxSubsystem) {
-    Write-BoxstarterMessage "Installing linux subsystem apps"
-
-    ##install LinuxSubsystem
-    Use-Checkpoint -Function ${Function:Install-LinuxSubsystem} -CheckpointName 'LinuxSubsystem' -SkipMessage 'LinuxSubsystem is already configured'
-
-    if (Test-PendingReboot) { Invoke-Reboot }
-}
-
-#install apps for home use
-Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName 'HomeApps' -SkipMessage 'Home apps are already installed'
-
-#move windows libraries to data drive
-Use-Checkpoint -Function ${Function:Update-WindowsLibraries} -CheckpointName 'WindowsLibraries' -SkipMessage 'Libraries are already configured'
-
-# install chocolatey as last choco package
-# ToDo: why last? install first?
-choco install chocolatey --limitoutput
+###########
+Write-BoxstarterMessage "Starting installs..."
 
 # re-enable chocolatey default confirmation behaviour
-Use-Checkpoint -Function ${Function:Disable-ChocolateyFeatures} -CheckpointName 'DisableChocolatey' -SkipMessage 'Chocolatey features already configured'
+Use-Checkpoint -Function ${Function:Disable-ChocolateyFeatures} -CheckpointName '$checkpointPrefix:DisableChocolatey' -SkipMessage 'Chocolatey features already configured'
+
+# Install apps for home use
+Write-BoxstarterMessage "Installing home apps..."
+Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName '$checkpointPrefix:HomeApps' -SkipMessage 'Home apps are already installed'
+
+if (Test-Path env:\BoxStarter:Option:InstallDev) {
+    Write-BoxstarterMessage "Installing dev apps..."
+        
+    New-SourceCodeFolder
+    
+    Use-Checkpoint -Function ${Function:Install-DevFeatures} -CheckpointName '$checkpointPrefix:DevFeatures' -SkipMessage 'Windows dev features are already configured'
+
+    Use-Checkpoint -Function ${Function:Install-InternetInformationServices} -CheckpointName '$checkpointPrefix:InternetInformationServices' -SkipMessage 'IIS features are already configured'
+
+    if (Test-PendingReboot) { Invoke-Reboot }
+
+    Use-Checkpoint -Function ${Function:Install-DevTools} -CheckpointName '$checkpointPrefix:DevTools' -SkipMessage 'Dev tools are already installed'
+
+    Use-Checkpoint -Function ${Function:Install-VisualStudio2017} -CheckpointName '$checkpointPrefix:VisualStudio2017Community' -SkipMessage 'Visual Studio 2017 Community is already installed'
+
+    Use-Checkpoint -Function ${Function:Install-VisualStudio2017Workloads} -CheckpointName '$checkpointPrefix:VisualStudio2017Workloads' -SkipMessage 'Visual Studio 2017 Workloads are already installed'
+}
+
+if (Test-Path env:\BoxStarter:Option:InstallLinuxSubsystem) {
+    Write-BoxstarterMessage "Installing linux subsystem apps"
+    Use-Checkpoint -Function ${Function:Install-LinuxSubsystem} -CheckpointName '$checkpointPrefix:LinuxSubsystem' -SkipMessage 'LinuxSubsystem is already configured'
+
+    if (Test-PendingReboot) { Invoke-Reboot }
+}
 
 if (Test-PendingReboot) { Invoke-Reboot }
 
-# reload path environment variable
+# Eeload path environment variable
 Update-Path
 
-Use-Checkpoint -Function ${Function:Install-PowerShellModules} -CheckpointName 'PowerShellModules' -SkipMessage 'PowerShell modules are already installed'
+Use-Checkpoint -Function ${Function:Install-PowerShellModules} -CheckpointName '$checkpointPrefix:PowerShellModules' -SkipMessage 'PowerShell modules are already installed'
 
 # set HOME to user profile for git
 [Environment]::SetEnvironmentVariable("HOME", $env:UserProfile, "User")
@@ -300,13 +275,3 @@ Enable-UAC
 
 Clear-Checkpoints
 Write-BoxstarterMessage "--- END ---"
-
-#Update-Path
-# take care of chocolatey and boxstarter module dependency at start
-# log each app status ($LASTEXITCODE?)
-# log section complete status
-# display all input information
-# defaults: only home apps?
-# echo each install
-# split info multiple files and modules
-# unify usage of 'SetEnvironmentVariable'
