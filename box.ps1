@@ -88,7 +88,6 @@ function Install-HomeApps {
         ('teamspeak',''),
         ('mumble',''),
         ('spotify',''),
-        ('ditto',''),
         ('firacode','')
 
         #('cdburnerxp',''),
