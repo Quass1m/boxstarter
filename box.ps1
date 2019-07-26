@@ -54,7 +54,9 @@ function Install-HomeApps {
         ('googlechrome',''),
         ('googledrive',''),
         ('greenshot',''),
+	('irfanviewplugins',''),
         ('irfanview',''),
+        ('imgburn',''),
         ('jdk8',''),
         ('k-litecodecpackfull',''),
         ('lockhunter',''),
@@ -79,6 +81,10 @@ function Install-HomeApps {
         ('spotify',''),
         ('firacode','')
 
+        ('handbrake',''),
+        ('audacity',''),
+        ('audacity-lame',''),
+        ('audacity-ffmpeg',''),
         #('cdburnerxp',''),
         #('f.lux',''),
         #('miktex',''),
