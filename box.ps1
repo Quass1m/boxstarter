@@ -179,6 +179,9 @@ function Install-DevTools {
         Install-App -Name $app[0] -Args $app[1]
     }
 	
+    # Azure Az
+    Install-Module -Name Az -AllowClobber -Scope CurrentUser -Force
+
     # pin apps that update themselves
     #choco pin add -n=gitkraken
     #choco pin add -n=docker-for-windows
