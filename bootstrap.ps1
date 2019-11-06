@@ -1,4 +1,8 @@
-# .\bootstrap.ps1 -InstallDev=$true -SourceCodeFolder "C:\GIT" -SkipWindowsUpdate
+# Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force
+# . { iwr -useb https://boxstarter.org/bootstrapper.ps1 } | iex; Get-Boxstarter -Force
+
+# .\bootstrap.ps1 -InstallDev=$true -SourceCodeFolder "C:\GIT"
+
 # START http://boxstarter.org/package/nr/url?C:\boxstarter-master\box.ps1
 
 # 1. CMD install choco:
@@ -15,22 +19,19 @@ param
     $InstallHome = $true,
 
     [Switch]
-    $InstallDev,
+    $InstallDev = $true,
 
     [Switch]
     $InstallDocker,
-
-    [Switch]
-    $InstallLinuxSubsystem,
 
     [String]
     $DataDrive,
 
     [String]
-    $SourceCodeFolder,
+    $SourceCodeFolder = "D:\GIT",
 
     [Switch]
-    $SkipWindowsUpdate = $true,
+    $RunWindowsUpdate,
 
     [Switch]
     $EnableWindowsAuthFeature,
@@ -44,33 +45,24 @@ param
     [Switch]
     $DesktopSettings,
 
-    #[Switch]
-    #$NotebookSettings,
+    [Switch]
+    $NotebookSettings,
 
     [Switch]
     $DevSettings,
 
     [Switch]
-    $MoveWindowsLibraries#,
+    $MoveWindowsLibraries,
 
-    # [Switch]
-    # $InstallVS2017Community,
+    [Switch]
+    $InstallVsCommunity,
 
-    # [Switch]
-    # $InstallVS2017Enterprise,
+    [Switch]
+    $InstallVsEnterprise,
 
-    # [Switch]
-    # $SqlServer2016,
-
-    # [String]
-    # $SqlServer2016IsoImage,
-
-    # [String]
-    # $SqlServer2016SaPassword
+    [Switch]
+    $SqlServer
 )
-
-# ?
-#choco install boxstarter
 
 function Set-EnvironmentVariable
 {
@@ -86,7 +78,7 @@ function Set-EnvironmentVariable
     )
 
     [Environment]::SetEnvironmentVariable($Key, $Value, "Machine") # for reboots
-	[Environment]::SetEnvironmentVariable($Key, $Value, "Process") # for right now
+    [Environment]::SetEnvironmentVariable($Key, $Value, "Process") # for right now
 }
 
 function Get-Option
@@ -111,47 +103,29 @@ $path = $PSScriptRoot
 Write-Host "Path:" $path
 
 Set-EnvironmentVariable -Key "BoxStarter:Option:InstallHome" -Value (Get-Option $InstallHome)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:InstallDev" -Value (Get-Option $InstallDev)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:InstallDocker" -Value (Get-Option $InstallDocker)
-
-Set-EnvironmentVariable -Key "BoxStarter:Option:InstallLinuxSubsystem" -Value (Get-Option $InstallLinuxSubsystem)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:DataDrive" -Value $DataDrive
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:SourceCodeFolder" -Value $SourceCodeFolder
-
-Set-EnvironmentVariable -Key "BoxStarter:Option:SkipWindowsUpdate" -Value (Get-Option $SkipWindowsUpdate)
-
+Set-EnvironmentVariable -Key "BoxStarter:Option:RunWindowsUpdate" -Value (Get-Option $RunWindowsUpdate)
 Set-EnvironmentVariable -Key "BoxStarter:Option:EnableWindowsAuthFeature" -Value (Get-Option $EnableWindowsAuthFeature)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:BaseSettings" -Value (Get-Option $BaseSettings)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:UserSettings" -Value (Get-Option $UserSettings)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:DesktopSettings" -Value (Get-Option $DesktopSettings)
-
-#Set-EnvironmentVariable -Key "BoxStarter:Option:NotebookSettings" -Value (Get-Option $NotebookSettings)
-
+Set-EnvironmentVariable -Key "BoxStarter:Option:NotebookSettings" -Value (Get-Option $NotebookSettings)
 Set-EnvironmentVariable -Key "BoxStarter:Option:DevSettings" -Value (Get-Option $DevSettings)
-
 Set-EnvironmentVariable -Key "BoxStarter:Option:MoveWindowsLibraries" -Value (Get-Option $MoveWindowsLibraries)
+Set-EnvironmentVariable -Key "BoxStarter:Option:SqlServer" -Value (Get-Option $SqlServer)
+Set-EnvironmentVariable -Key "BoxStarter:Option:InstallVsCommunity" -Value (Get-Option $InstallVsCommunity)
+Set-EnvironmentVariable -Key "BoxStarter:Option:InstallVsEnterprise" -Value (Get-Option $InstallVsEnterprise)
 
 # Module path
 Set-EnvironmentVariable -Key "BoxStarter:ModulePath" -Value $path
 
-#Set-EnvironmentVariable -Key "BoxStarter:Option:SqlServer2016" -Value (Get-Option $SqlServer2016)
 
-#if ($InstallVS2017Community)
-#{
-#    Set-EnvironmentVariable -Key "BoxStarter:Option:InstallVS2017Community" -Value "1"
-#}
+# ToDo: TEMP
+return;
 
-#if ($InstallVS2017Enterprise)
-#{
-#    Set-EnvironmentVariable -Key "BoxStarter:Option:InstallVS2017Enterprise" -Value "1"
-#}
 
 $installScript =  Join-Path $PSScriptRoot 'box.ps1'
 $webLauncherUrl = "http://boxstarter.org/package/nr/url?$installScript"

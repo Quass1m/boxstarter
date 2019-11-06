@@ -17,20 +17,22 @@
 
 function Install-HomeApps {
     $apps = @(
-        ('chocolatey',''),
-        ('boxstarter',''),
-        ('chocolatey-core.extension',''),        
+        #('chocolatey',''),
+        #('boxstarter',''),
+        #('chocolatey-core.extension',''),        
+        #('chocolateygui',''),
+        ('notepadplusplus',''),
         ('vscode',''),
+        ('k-litecodecpackfull',''),
         ('7zip',''),
-        ('allow-block-remove-firewall',''),
-        ('autohotkey.portable',''),
-        ('calibre',''),
-        ('chocolateygui',''),
+        #('allow-block-remove-firewall',''), # "This program will add a right click option to all .exe and .com programs, allowing you to allow, block or remove a program from the Windows firewall in 1 click."
+        #('autohotkey.portable',''),
+        #('calibre',''),
         ('ccleaner',''),
         ('clink',''),
         ('cpu-z',''),
         ('dropbox',''),
-        ('dws.portable',''),
+        #('dws.portable',''),
         ('gpu-z',''),
         ('hwinfo',''),
         ('openhardwaremonitor',''),
@@ -40,55 +42,45 @@ function Install-HomeApps {
         ('firefox',''),
         ('foobar2000',''),
         ('googlechrome',''),
-        ('googledrive',''),
+        ('google-backup-and-sync',''),
         ('greenshot',''),
-	    ('irfanviewplugins',''),
-        ('irfanview',''),
-        ('imgburn',''),
+		('irfanview',''),
+        ('irfanviewplugins',''),
+        #('imgburn',''),
         ('jdk8',''),
-        ('k-litecodecpackfull',''),
-        ('lockhunter',''),
-        ('notepadplusplus',''),
-        ('glogg',''),
+        #('lockhunter',''),
         ('paint.Net',''),
-        ('pip',''),
         ('qbittorrent',''),
         ('rufus',''),
-        ('skype',''),
-        ('speccy',''),
+        ##('skype',''), # Windows Store pre-installed app
+        #('speccy',''),
         ('steam',''),
         ('virtualbox',''),
         ('vlc',''),
         ('wget',''),
-        ('windirstat',''),
-        ('winscp',''),
-        ('wireshark',''),
         ('youtube-dl',''),
         ('teamspeak',''),
         ('mumble',''),
-        ('spotify',''),
+        ##('spotify',''), # Windows Store pre-installed app
         ('firacode',''),
         ('handbrake',''),
-        ('audacity',''),
-        ('audacity-lame',''),
-        ('audacity-ffmpeg','')
         #('cdburnerxp',''),
         #('f.lux',''),
         #('miktex',''),
         #('TeXstudio',''),
+        ('audacity',''),
+        ('audacity-lame',''),
+        ('audacity-ffmpeg','')
     )
 
     foreach ($app in $apps) {
-        Install-App -Name $app[0] -Args $app[0]
-
+        Install-App -Name $app[0] -Args $app[1]
     }   
-    
-    # Install vscode extensions
-    Use-Checkpoint -Function ${Function:Install-VisualStudioCodeExtensions} -CheckpointName '$checkpointPrefix:VisualStudioCodeExtensions' -SkipMessage 'VSCode extensions are already installed'
-
+	
     # pin apps that update themselves
     $pinApps = @(
-        'skype',
+        #'skype',
+        'vscode',
         'steam',
         'firefox',
         'vscode',
@@ -98,6 +90,9 @@ function Install-HomeApps {
     foreach ($pin in $pinApps) {
         Pin-App -Name $pin
     }
+
+    # Install vscode extensions
+    Use-Checkpoint -Function ${Function:Install-VisualStudioCodeExtensions} -CheckpointName $checkpointPrefix'VisualStudioCodeExtensions' -SkipMessage 'VSCode extensions are already installed'
 }
 
 function Install-DevTools {	
@@ -106,16 +101,11 @@ function Install-DevTools {
         ('jq',''), #bash json parsing
 		('sql-server-management-studio', '--limitoutput'),
 		('sql-operations-studio', '--limitoutput'),
-		('curl',''),
 		('cmder',''),
-		('git','"/GitAndUnixToolsOnPath"'),
-		#('git -params '"/GitAndUnixToolsOnPath"'
+		('git','/GitAndUnixToolsOnPath'),
+		('git-credential-manager-for-windows',''),
 		('hyper',''),
-		#('cygwin',''),
-		('firacode',''),
 		('fciv',''),
-		('filezilla',''),
-		('git-credential-winstore',''),
 		('poshgit',''),
 		('linqpad',''),
 		('nuget.commandline',''),
@@ -124,64 +114,57 @@ function Install-DevTools {
 		('azure-cli',''),
 		('procexp',''),
 		('putty',''),
-		('python',''),
-		('anaconda3','/AddToPath:1'),
+		('anaconda3','/AddToPath'),
+		#('python',''), # Is it necessary when installing Anaconda3?
+		#('pip',''),	# Is it necessary when installing Anaconda3?
 		('postman',''),
 		('sysinternals',''),
 		('vim',''),
-		# ('vscode',''), installed in Install-VisualStudioCode
 		('windbg',''),
 		('winmerge',''),
-		('docker-cli',''),
-		('docker-for-windows',''), # Windows Enterprise?
-		('docker-toolbox',''),     # Windows Home?
 		('nugetpackageexplorer',''),
-		('windowsazurepowershell',''),
+		('azurepowershell',''),
 		('microsoftazurestorageexplorer',''),
 		('servicebusexplorer',''),
 		('dotnetcore-sdk',''),
-		('azure-functions-core-tools','')
+		('azure-functions-core-tools',''),
 		('az.powershell','')
 		
+		#('winscp',''),
+		#('wireshark',''),
+		#('cygwin',''),
+		#('glogg',''),
 		#('gcloudsdk',''),
 		#('intellijidea-community',''),
-		#('gitkraken',''),
-		#('windowsazurelibsfornet',''),
-		#('rapidee',''),
-		#('scala',''),
-		#('lessmsi',''),
 		#('terraform',''),
 		#('draft ',''),
 		#('kubernetes-helm',''), 
-		#('packer',''),
-		#('golang',''),
-		#('vagrant',''),
-		#('tortoisegit',''),
-		#('azurestorageexplorer cloudberryexplorer.azurestorage',''),
+		#('golang','')
+		# ToDo: add 'Azurite' package when it's up on chocolatey
 	)
 	
-	foreach ($app in $apps) {
+    foreach ($app in $apps) {
         Install-App -Name $app[0] -Args $app[1]
     }
+
+	Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+	Install-Module -Name PowerShellGet -Force
 	
     # Azure Az
     Install-Module -Name Az -AllowClobber -Scope CurrentUser -Force
 
     # set HOME to user profile for git
     [Environment]::SetEnvironmentVariable("HOME", $env:UserProfile, "User")
-
-    # pin apps that update themselves
-    #choco pin add -n=gitkraken
-    #choco pin add -n=docker-for-windows
 }
 
 function Install-Docker {
     $apps = @(
+		# ToDo: install proper version based on windows 10 home/pro edition
 		('docker-for-windows',''), # Windows Enterprise?
 		('docker-toolbox',''),
 		('docker-cli','')
 	)
-	
+
 	foreach ($app in $apps) {
         Install-App -Name $app[0] -Args $app[1]
     }
@@ -195,68 +178,59 @@ Write-Host "Script root $PSScriptRoot"
 $modulePath = (Get-ChildItem env:\BoxStarter:ModulePath).Value
 Write-Host "Module path $modulePath"
 
-Import-Module -Name (Join-Path "$modulePath" "box_functions.psm1") -Verbose
-
-$checkpointPrefix = 'BoxStarter:Checkpoint:'
+Import-Module -Name (Join-Path "$modulePath" "box_functions.psm1") -Verbose -Force
 
 ###### Start ######
-Write-Host "aaa"
-
-######3
-Write-Host "bbbb"
 choco feature enable -n allowGlobalConfirmation
 
-Write-Host "ccc"
 Disable-UAC
-Write-Host "dddddd"
 $dataDriveLetter = Get-DataDrive
 $dataDrive = "$dataDriveLetter`:"
 $tempInstallFolder = New-InstallCache -InstallDrive $dataDrive
 
-Write-Host "eeeee"
-Use-Checkpoint -Function ${Function:Set-RegionalSettings} -CheckpointName 'RegionalSettings' -SkipMessage 'Regional settings are already configured'
+$checkpointPrefix = 'BoxStarter:Checkpoint:'
 
-Write-Host "ffffff"
-if (-NOT (Test-Variable -Path env:\BoxStarter:Option:SkipWindowsUpdate)) {
+Use-Checkpoint -Function ${Function:Set-RegionalSettings} -CheckpointName $checkpointPrefix'RegionalSettings' -SkipMessage 'Regional settings are already configured'
+
+if (Test-Variable -Path env:\BoxStarter:Option:RunWindowsUpdate) {
     Write-BoxstarterMessage "Windows update..."
 
-    Use-Checkpoint -Function ${Function:Install-WindowsUpdateFunc} -CheckpointName 'WindowsUpdateFunc' -SkipMessage 'WindowsUpdateFunc is already configured'
+    Use-Checkpoint -Function ${Function:Install-WindowsUpdateFunc} -CheckpointName $checkpointPrefix'WindowsUpdateFunc' -SkipMessage 'WindowsUpdateFunc is already configured'
 
     #if (Test-PendingReboot) { Invoke-Reboot }
 }
 
-Write-Host "gggg"
-Use-Checkpoint -Function ${Function:Enable-ChocolateyFeatures} -CheckpointName 'IntialiseChocolatey' -SkipMessage 'Chocolatey features already configured'
+Use-Checkpoint -Function ${Function:Enable-ChocolateyFeatures} -CheckpointName $checkpointPrefix'IntialiseChocolatey' -SkipMessage 'Chocolatey features already configured'
 
-Write-Host "hhhhhh"
 Write-BoxstarterMessage "Starting installs"
 
-#install apps for home use
+# ToDo: use this approach 
+# install apps for home use
 #Execute-Step -Name 'HomeApps'
-#Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName 'HomeApps' -SkipMessage 'Home apps are already installed'
-
-Write-Host "iiiiiiiii"
+#Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName $checkpointPrefix'HomeApps' -SkipMessage 'Home apps are already installed'
 
 if (Test-Variable -Path env:\BoxStarter:Option:InstallHome) {
     Write-BoxstarterMessage "Installing home apps"
 
-    Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName 'InstallHomeApps' -SkipMessage 'Home apps are already installed'
+    Use-Checkpoint -Function ${Function:Install-HomeApps} -CheckpointName $checkpointPrefix'InstallHomeApps' -SkipMessage 'Home apps are already installed'
 }
 
 if (Test-Variable -Path env:\BoxStarter:Option:InstallDev) {
     Write-BoxstarterMessage "Installing dev apps"
 
     #enable dev related windows features
-    Use-Checkpoint -Function ${Function:Install-DevFeatures} -CheckpointName 'DevFeatures' -SkipMessage 'Windows dev features are already configured'
+    Use-Checkpoint -Function ${Function:Install-DevFeatures} -CheckpointName $checkpointPrefix'DevFeatures' -SkipMessage 'Windows dev features are already configured'
 
+	# ToDo: fix it
     #setup IIS & EnableWindowsAuthFeature
-    Use-Checkpoint -Function ${Function:Install-InternetInformationServices} -CheckpointName 'InternetInformationServices' -SkipMessage 'IIS features are already configured'
+    #Use-Checkpoint -Function ${Function:Install-InternetInformationServices} -CheckpointName $checkpointPrefix'InternetInformationServices' -SkipMessage 'IIS features are already configured'
 
     #install apps used for dev
-    Use-Checkpoint -Function ${Function:Install-DevTools} -CheckpointName 'DevTools' -SkipMessage 'Dev tools are already installed'
+    Use-Checkpoint -Function ${Function:Install-DevTools} -CheckpointName $checkpointPrefix'DevTools' -SkipMessage 'Dev tools are already installed'
 
-    #install vscode and extensions
-    Use-Checkpoint -Function ${Function:Install-VisualStudioCode} -CheckpointName 'VisualStudioCode' -SkipMessage 'VSCode is already installed'
+	# ToDo: implement in a better way
+    ##install vscode and extensions
+    #Use-Checkpoint -Function ${Function:Install-VisualStudioCode} -CheckpointName $checkpointPrefix'VisualStudioCode' -SkipMessage 'VSCode is already installed'
 
     # make folder for source code
     New-SourceCodeFolder
@@ -264,37 +238,32 @@ if (Test-Variable -Path env:\BoxStarter:Option:InstallDev) {
 
 if (Test-Variable -Path env:\BoxStarter:Option:InstallDocker) {
     Write-BoxstarterMessage "Installing docker"
-    Use-Checkpoint -Function ${Function:Install-Docker} -CheckpointName 'InstallDocker' -SkipMessage 'Docker already installed'
+    Use-Checkpoint -Function ${Function:Install-Docker} -CheckpointName $checkpointPrefix'InstallDocker' -SkipMessage 'Docker already installed'
 }
 
-if (Test-Variable -Path env:\BoxStarter:Option:InstallLinuxSubsystem) {
-    Write-BoxstarterMessage "Installing linux subsystem apps"
-
-    Use-Checkpoint -Function ${Function:Install-InstallLinuxSubsystem} -CheckpointName 'InstallLinuxSubsystem' -SkipMessage 'InstallLinuxSubsystem is already configured'
-}
-
-# if (Test-Variable -Path env:\BoxStarter:Option:SqlServer2016) {
+# ToDo: install SqlServer 2019 (Developer)
+# if (Test-Variable -Path env:\BoxStarter:Option:SqlServer) {
 #     Write-BoxstarterMessage "SqlServer2016"
 
-#     Use-Checkpoint -Function ${Function:Set-SqlServer2016} -CheckpointName 'SqlServer2016' -SkipMessage 'SqlServer2016 are already configured'
+#     Use-Checkpoint -Function ${Function:Set-SqlServer2016} -CheckpointName $checkpointPrefix'SqlServer2016' -SkipMessage 'SqlServer2016 are already configured'
 # }
 
 if (Test-Variable -Path env:\BoxStarter:Option:BaseSettings) {
     Write-BoxstarterMessage "Setting up BaseSettings"
 
-    Use-Checkpoint -Function ${Function:Set-BaseSettings} -CheckpointName 'BaseSettings' -SkipMessage 'BaseSettings are already configured'
+    Use-Checkpoint -Function ${Function:Set-BaseSettings} -CheckpointName $checkpointPrefix'BaseSettings' -SkipMessage 'BaseSettings are already configured'
 }
 
 if (Test-Variable -Path env:\BoxStarter:Option:UserSettings) {
     Write-BoxstarterMessage "Setting up UserSettings"
 
-    Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName 'UserSettings' -SkipMessage 'UserSettings are already configured'
+    Use-Checkpoint -Function ${Function:Set-UserSettings} -CheckpointName $checkpointPrefix'UserSettings' -SkipMessage 'UserSettings are already configured'
 }
 
 if (Test-Variable -Path env:\BoxStarter:Option:DesktopSettings) {
     Write-BoxstarterMessage "Setting up DesktopSettings"
 
-    Use-Checkpoint -Function ${Function:Set-DesktopSettings} -CheckpointName 'DesktopSettings' -SkipMessage 'DesktopSettings are already configured'
+    Use-Checkpoint -Function ${Function:Set-DesktopSettings} -CheckpointName $checkpointPrefix'DesktopSettings' -SkipMessage 'DesktopSettings are already configured'
 }
 
 # ToDo: NotebookSettings
@@ -302,35 +271,28 @@ if (Test-Variable -Path env:\BoxStarter:Option:DesktopSettings) {
 if (Test-Variable -Path env:\BoxStarter:Option:DevSettings) {
     Write-BoxstarterMessage "Setting up DevSettings"
 
-    Use-Checkpoint -Function ${Function:Set-DevSettings} -CheckpointName 'DevSettings' -SkipMessage 'Dev settings are already configured'
+    Use-Checkpoint -Function ${Function:Set-DevSettings} -CheckpointName $checkpointPrefix'DevSettings' -SkipMessage 'Dev settings are already configured'
 }
 
 if (Test-Variable -Path env:\BoxStarter:Option:MoveWindowsLibraries) {
     Write-BoxstarterMessage "MoveWindowsLibraries"
 
-    Use-Checkpoint -Function ${Function:Install-MoveWindowsLibraries} -CheckpointName 'PowerShellModules' -SkipMessage 'PowerShell modules are already installed'
+    Use-Checkpoint -Function ${Function:Install-MoveWindowsLibraries} -CheckpointName $checkpointPrefix'PowerShellModules' -SkipMessage 'PowerShell modules are already installed'
 }
-
-# re-enable chocolatey default confirmation behaviour
-#Use-Checkpoint -Function ${Function:Disable-ChocolateyFeatures} -CheckpointName 'DisableChocolatey' -SkipMessage 'Chocolatey features already configured'
 
 # reload path environment variable
 Update-Path
 
 # rerun windows update after we have installed everything
-if (-NOT (Test-Variable -Path env:\BoxStarter:Option:SkipWindowsUpdate)) {
+if (Test-Variable -Path env:\BoxStarter:Option:RunWindowsUpdate) {
     Write-BoxstarterMessage "Windows update..."
 
-    Use-Checkpoint -Function ${Function:Install-WindowsUpdateFunc} -CheckpointName 'WindowsUpdateFunc' -SkipMessage 'WindowsUpdateFunc is already configured'
+    Use-Checkpoint -Function ${Function:Install-WindowsUpdateFunc} -CheckpointName $checkpointPrefix'WindowsUpdateFunc' -SkipMessage 'WindowsUpdateFunc is already configured'
 
-    #if (Test-PendingReboot) { Invoke-Reboot }
+    if (Test-PendingReboot) { Invoke-Reboot }
 }
-
-### ?????? ###
-# install chocolatey as last choco package
-#choco install chocolatey --limitoutput
 
 Enable-UAC
 
-Clear-Checkpoints
+#Clear-Checkpoints
 Write-BoxstarterMessage "--- END ---"

@@ -101,14 +101,27 @@ function Use-Checkpoint {
     )
 
     $checkpoint = Get-Checkpoint -CheckpointName $CheckpointName
+	Write-BoxstarterMessage "$checkpoint - $CheckpointName - $SkipMessage"
 
-    if (-not $checkpoint) {
+	
+    if ($checkpoint -ne "1" -or $checkpoint -ne 1) {
+		# ToDo: TEMP
+		if ($Function -eq $null)
+		{
+			Write-Host "Null function in " $checkpoint -Background Red
+		}
+		
+		if ($Args -eq $null)
+		{
+			Write-Host "Null args in " $checkpoint -Background Red
+		}		
+		
         $Function.Invoke($Args)
 
         Set-Checkpoint -CheckpointName $CheckpointName -CheckpointValue 1
     }
     else {
-        Write-BoxstarterMessage $SkipMessage
+		Write-BoxstarterMessage $SkipMessage
     }
 }
 
@@ -402,8 +415,9 @@ function Install-VisualStudio2017Workloads {
 }
 
 function Install-VisualStudioCodeExtensions {
+	# ToDo: "code" is not rec
     # ToDo setup sync
-    code --install-extension Shan.code-settings-sync
+    #code --install-extension Shan.code-settings-sync
 }
 
 function Install-InternetInformationServices {
