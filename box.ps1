@@ -128,6 +128,7 @@ function Install-DevTools {
 		('servicebusexplorer',''),
 		('dotnetcore-sdk',''),
 		('azure-functions-core-tools',''),
+		('nodejs.install',''),
 		('az.powershell','')
 		
 		#('winscp',''),
